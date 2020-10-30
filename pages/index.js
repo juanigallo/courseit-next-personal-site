@@ -1,65 +1,84 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import Button from "../components/Button";
+import Input from "../components/Input";
+import { useState } from "react";
+import axios from "axios";
 
 export default function Home() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [data, setData] = useState({});
+  const [isFetching, setIsFetching] = useState(false);
+  function handleChange(e) {
+    setSearchTerm(e.target.value);
+  }
+
+  function handleKeyPress(e) {
+    if (e.key == "Enter") {
+      handleClick();
+    }
+  }
+
+  async function handleClick() {
+    setIsFetching(true);
+    const github = await axios.get(
+      `https://api.github.com/users/${searchTerm}`
+    );
+
+    const projectsData = await axios.get(
+      "https://api.jsonbin.io/b/5f9c9b21857f4b5f9ae05b30"
+    );
+
+    const userProjects = projectsData.data.find(
+      (user) => user.name == searchTerm
+    );
+
+    setSearchTerm("");
+
+    setData({
+      githubData: github.data,
+      projects: userProjects ? userProjects.projects : []
+    });
+
+    setIsFetching(false);
+  }
+
   return (
-    <div className={styles.container}>
-      <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+    <main>
+      <h1>Busca tu perfil</h1>
+      <Input
+        placeholder="Buscar tu perfil"
+        name="searchInput"
+        value={searchTerm}
+        onChange={handleChange}
+        onKeyPress={handleKeyPress}
+      />
+      <Button value="buscar" name="searchAction" onClick={handleClick} />
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
-      </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
-    </div>
-  )
+      {isFetching && <h1>Cargando</h1>}
+      <section>
+        {data.githubData && (
+          <div>
+            <div className="img">
+              <img src={data.githubData.avatar_url} />
+            </div>
+            <div>
+              <h2>{data.githubData.name}</h2>
+              <h3>{data.githubData.bio}</h3>
+            </div>
+          </div>
+        )}
+        {data.projects && (
+          <div>
+            {data.projects.map((project, key) => {
+              return (
+                <div key={key}>
+                  <h4>{project.name}</h4>
+                  <h5>{project.desc}</h5>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    </main>
+  );
 }
